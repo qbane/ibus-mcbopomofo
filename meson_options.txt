@@ -1,0 +1,4 @@
+option('mcbopomofo_path',
+  type: 'string',
+  value: '',
+  description: 'Absolution path to root of mcbopomofo built directory containing static libraries.')

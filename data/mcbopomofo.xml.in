@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- filename: mcbopomofo.xml -->
+<component>
+    <name>org.openVanilla.McBopomofo</name>
+    <description>McBopomofo Component</description>
+    <version>0.0.1</version>
+    <license>MIT</license>
+    <author>The McBopomofo Authors</author>
+    <homepage>https://mcbopomofo.openvanilla.org/</homepage>
+    <exec>@LIBEXECDIR@/@ENGINE_NAME@ --ibus</exec>
+    <textdomain>@GETTEXT_PACKAGE@</textdomain>
+    <engines>
+        <engine>
+            <name>mcbopomofo</name>
+            <longname>McBopomofo</longname>
+            <description>McBopomofo Input Method Engine</description>
+            <language>zh</language>
+            <license>MIT</license>
+            <author>qbane</author>
+            <icon>@PKGDATADIR@/icons/Bopomofo.png</icon>
+            <layout>default</layout>
+            <rank>80</rank>
+            <symbol>Mc</symbol>
+            <setup>/usr/bin/notify-send McBopomofo-setup-is-WIP</setup>
+        </engine>
+    </engines>
+</component>

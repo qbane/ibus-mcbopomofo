@@ -1,0 +1,3 @@
+[submodule "mcbopomofo-core"]
+	path = mcbopomofo-core
+	url = https://github.com/qbane/mcbopomofo-core.git
