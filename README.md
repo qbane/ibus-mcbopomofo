@@ -8,10 +8,12 @@
 
 Dependencies are as follows:
 
-* Vala (>= 0.40.0)
-* meson (>= 0.61.0?)
+* GIO
+* GLib (>= 2.72)
 * libibus-1.0-dev (>= 1.5.0?)
+* meson (>= 0.61.0?)
 * ninja (>= 1.8.2)
+* Vala (>= 0.40.0)
 
 You have to build [the core part](https://github.com/qbane/mcbopomofo-core) first, which is pinned as a submodule:
 
