@@ -18,7 +18,7 @@ You have to build [the core part](https://github.com/qbane/mcbopomofo-core) firs
 ```
 git submodule update --recursive
 
-cd
+cd mcbopomofo-core
 mkdir build
 cd build
 # need the following dependencies:
@@ -33,6 +33,7 @@ Note that older libfmt does not have a header-only version script for CMake.
 If you encounter undefined references while building, you should edit `meson.build` by adding a dependency to libfmt to link against it.
 
 ```
+cd ../..
 meson setup build --prefix=/usr/local
 cd build
 ninja
