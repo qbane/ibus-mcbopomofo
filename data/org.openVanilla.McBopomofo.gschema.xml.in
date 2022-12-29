@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="@GETTEXT_PACKAGE@">
+  <enum id="org.openVanilla.McBopomofo.bpmf-keyboard-layout">
+    <value nick="standard" value="0"/>
+    <value nick="eten" value="1"/>
+    <value nick="hsu" value="2"/>
+    <value nick="et26" value="3"/>
+    <value nick="hanyupinyin" value="4"/>
+    <value nick="ibm" value="5"/>
+  </enum>
+
+  <enum id="org.openVanilla.McBopomofo.cand-layout-hint">
+    <value nick="system" value="-1"/>
+    <value nick="horizontal" value="0"/>
+    <value nick="vertical" value="1"/>
+  </enum>
+
+  <enum id="org.openVanilla.McBopomofo.select-phrase">
+    <value nick="before-cursor" value="0"/>
+    <value nick="after-cursor" value="1"/>
+  </enum>
+
+  <enum id="org.openVanilla.McBopomofo.behavior-shift-letter-keys">
+    <value nick="directly-output-uppercase" value="0"/>
+    <value nick="put-lowercase-to-buffer" value="1"/>
+  </enum>
+
+  <enum id="org.openVanilla.McBopomofo.behavior-ctrl-enter">
+    <value nick="noop" value="0"/>
+    <value nick="output-bpmf-reading" value="1"/>
+    <value nick="output-html-ruby-text" value="2"/>
+  </enum>
+
+  <schema id="org.openVanilla.McBopomofo" path="/desktop/ibus/engine/mcbopomofo/">
+    <key name="keyboard-layout" enum="org.openVanilla.McBopomofo.bpmf-keyboard-layout">
+      <default>'standard'</default>
+      <summary>Keyboard layout</summary>
+    </key>
+    <key name="passthrough-switch-enabled" type="b">
+      <default>false</default>
+      <summary>Enable shift keys to toggle passthough mode temporarily</summary>
+      <description>This feature is seen in most IMEs but not in the original McBopomofo.</description>
+    </key>
+    <key name="use-soft-cursor" type="b">
+      <default>true</default>
+      <summary>When the preedit text is not embedded within application, draw a character U+2038 as caret.</summary>
+      <description>When set to false, the character at caret position is highlighted. This feature is inspired by ibus-rime to workaround GNOME's own integration with IBus.</description>
+    </key>
+    <key name="candidates-per-page" type="i">
+      <range min="2" max="16"/>
+      <default>10</default>
+      <summary>Candidates per page in the lookup table</summary>
+    </key>
+    <key name="selection-keys" type="s">
+      <default>'1234567890'</default>
+      <summary>Candidate selection keys</summary>
+      <description>One character represents an entry. Will be truncated down to candidates per page.</description>
+    </key>
+    <key name="cand-layout-hint" enum="org.openVanilla.McBopomofo.cand-layout-hint">
+      <default>'system'</default>
+      <summary>Layout direction of candidate table</summary>
+    </key>
+    <key name="select-phrase" enum="org.openVanilla.McBopomofo.select-phrase">
+      <default>'before-cursor'</default>
+      <summary>Which character to select a candidate with respect to the cursor</summary>
+    </key>
+    <key name="behavior-shift-letter-keys" enum="org.openVanilla.McBopomofo.behavior-shift-letter-keys">
+      <default>'directly-output-uppercase'</default>
+      <summary>The behavior of letter keys while shift is pressed</summary>
+    </key>
+    <key name="behavior-ctrl-enter-key" enum="org.openVanilla.McBopomofo.behavior-ctrl-enter">
+      <default>'noop'</default>
+      <aliases>
+        <alias value="disabled" target="noop"/>
+      </aliases>
+      <summary>The behavior of committing when pressing ctrl-Enter</summary>
+    </key>
+    <key name="open-user-phrase-files-with" type="s">
+      <default>'xdg-open'</default>
+      <summary>App to open custom phrase text files</summary>
+    </key>
+    <key name="add-script-hook-path" type="s">
+      <default>''</default>
+      <summary>The path to hook-script after a phrase is added</summary>
+    </key>
+    <key name="auto-advance-cursor" type="b">
+      <default>false</default>
+      <summary>Advance cursor automatically after selection</summary>
+    </key>
+    <key name="esc-clears-buffer" type="b">
+      <default>false</default>
+      <summary>Esc key clears entire composing buffer</summary>
+    </key>
+  </schema>
+</schemalist>

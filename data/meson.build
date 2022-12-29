@@ -5,12 +5,10 @@ configure_file(
   install_dir: datadir / 'ibus/component',
   configuration: configurations)
 
-# TODO
-mcbpmf_gschema = 'org.freedesktop.IBus.McBopomofo.gschema.xml'
+mcbpmf_gschema = 'org.openVanilla.McBopomofo.gschema.xml'
 configure_file(
   input: mcbpmf_gschema + '.in',
   output: mcbpmf_gschema,
-  install: false,
   install_dir: datadir / 'glib-2.0/schemas',
   configuration: configurations)
 

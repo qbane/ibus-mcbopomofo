@@ -1,18 +1,27 @@
 static bool ibus;
 
+string? test_model_dir(string path_base) {
+  var path = Path.build_filename(path_base, "ibus-mcbopomofo", "data");
+  if (FileUtils.test(path, FileTest.IS_DIR)) {
+    return path;
+  }
+  return null;
+}
+
 // ad-hoc way to probe a valid data dir
 string? probe_model_dir() {
   var userPath = Environment.get_user_data_dir();
+  string? dir;
+  if ((dir = test_model_dir(userPath)) != null) {
+    info("Language model is found in user data dir: [%s].", dir);
+    return dir;
+  }
+
   var systemPaths = Environment.get_system_data_dirs();
-
-  for (int i = -1; i < systemPaths.length; i++) {
-    var path_base = i < 0 ? userPath : systemPaths[i];
-    var dir = Path.build_filename(path_base, "ibus-mcbopomofo", "data");
-    File f = File.new_build_filename(dir, "mcbopomofo-data.txt");
-    debug("Trying [%s]...", f.get_path());
-
-    if (f.query_exists()) {
-      info("Language model is found. Using path [%s].", dir);
+  foreach (var sysPath in systemPaths) {
+    debug("Trying [%s]...", sysPath);
+    if ((dir = test_model_dir(sysPath)) != null) {
+      info("Language model is found in one of system data dirs: [%s].", dir);
       return dir;
     }
   }
@@ -47,7 +56,7 @@ int main(string[] args) {
     opt_context.add_main_entries(options, null);
     opt_context.parse(ref args);
   } catch (OptionError e) {
-    print ("%s\n", e.message);
+    print("%s\n", e.message);
     return 1;
   }
 

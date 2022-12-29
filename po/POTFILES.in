@@ -1,6 +1,4 @@
-# keep it sorted
-src/bus_watcher.vala
-src/engine.vala
+# TODO
 src/main.vala
-src/prop_manager.vala
+src/engine.vala
 data/org.freedesktop.IBus.McBopomofo.gschema.xml.in

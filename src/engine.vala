@@ -1,10 +1,15 @@
+unowned EnumValue? get_enum_from_variant(Type enum_type, Variant variant) {
+  unowned string nick = variant.get_string();
+  EnumClass enumc = (EnumClass) enum_type.class_ref();
+  return enumc.get_value_by_nick(nick);
+}
 
 class IBusMcBopomofo.Engine : IBus.Engine {
   public static IBus.Bus? bus;
   public static string? builtin_lm_dir;
   public static string? user_data_dir;
   protected class Settings m_panel_settings;
-  // protected class Settings m_engine_settings;
+  protected class Settings m_engine_settings;
 
   private McbpmfApi.Core core;
   private IBusMcBopomofo.BusWatcher m_bus_watcher;
@@ -54,28 +59,25 @@ class IBusMcBopomofo.Engine : IBus.Engine {
 
   class construct {
     m_panel_settings = new Settings("org.freedesktop.ibus.panel");
-    // m_engine_settings = new Settings("org.freedesktop.IBus.McBopomofo");
+    m_engine_settings = new Settings("org.openVanilla.McBopomofo");
   }
 
   construct {
     info("construct engine_name=[%s], object_path=[%s]!", this.engine_name, this.object_path);
 
-    this.m_panel_settings.bind("lookup-table-orientation", this, "lookup_table_orientation", SettingsBindFlags.DEFAULT);
+    this.m_panel_settings.bind("lookup-table-orientation", this, "lookup-table-orientation", SettingsBindFlags.DEFAULT);
 
     this.m_bus_watcher = new BusWatcher(this.connection);
-    // this.m_bus_watcher.notify_preedit.connect(val => {
-    //   this.embed_preedit_text = val;
-    // });
+    this.m_bus_watcher.bind_property(
+      "embed-preedit-text", this, "embed-preedit-text", BindingFlags.SYNC_CREATE);
 
-    this.passthrough_switch_enabled = true;
+    this.m_engine_settings.changed.connect(this.on_settings_changed);
+
     this.m_prop_manager = new PropManager();
     this.core = new McbpmfApi.Core();
 
-    // TODO: bind all configs here
     debug("this.core.input_mode=%s", this.core.input_mode.to_string());
-    this.core.select_cand_after_cursor = true;
-    this.core.auto_advance_cursor = true;
-    this.core.ctrl_enter_key = McbpmfApi.CtrlEnterBehavior.OUTPUT_HTML_RUBY_TEXT;
+    this.bind_settings();
 
     if (Engine.builtin_lm_dir == null) {
       warning("Path to built-in language model is empty!!");
@@ -100,6 +102,63 @@ class IBusMcBopomofo.Engine : IBus.Engine {
     info("destroy!");
     this.m_bus_watcher = null;
     base.destroy();
+  }
+
+  private void bind_settings() {
+    this.m_engine_settings.bind("passthrough-switch-enabled",
+      this, "passthrough-switch-enabled", SettingsBindFlags.GET);
+
+    this.m_engine_settings.bind("use-soft-cursor",
+      this, "use-soft-cursor", SettingsBindFlags.GET);
+
+    this.m_engine_settings.bind_with_mapping("keyboard-layout",
+      this.core, "keyboard-layout", SettingsBindFlags.GET,
+      (val_dest, variant) => {
+        var enumv = get_enum_from_variant(typeof(McbpmfApi.KeyboardLayout), variant);
+        if (enumv == null) {
+          return false;
+        }
+        val_dest.set_enum(enumv.value);
+        return true;
+      }, (SettingsBindSetMappingShared) null, null, null);
+
+    this.m_engine_settings.bind_with_mapping("select-phrase",
+      this.core, "select-cand-after-cursor", SettingsBindFlags.GET,
+      (val_dest, variant) => {
+        val_dest.set_boolean(variant.get_string() == "after-cursor");
+        return true;
+      }, (SettingsBindSetMappingShared) null, null, null);
+
+    this.m_engine_settings.bind("auto-advance-cursor",
+      this.core, "auto-advance-cursor", SettingsBindFlags.GET);
+
+    this.m_engine_settings.bind_with_mapping("behavior-shift-letter-keys",
+      this.core, "put-lcase-letters-to-buffer", SettingsBindFlags.GET,
+      (val_dest, variant) => {
+        val_dest.set_boolean(variant.get_string() == "put-lowercase-to-buffer");
+        return true;
+      }, (SettingsBindSetMappingShared) null, null, null);
+
+    this.m_engine_settings.bind("esc-clears-buffer",
+      this.core, "esc-clears-buffer", SettingsBindFlags.GET);
+
+    this.m_engine_settings.bind_with_mapping("behavior-ctrl-enter-key",
+      this.core, "ctrl-enter-behavior", SettingsBindFlags.GET,
+      (val_dest, variant) => {
+        var enumv = get_enum_from_variant(typeof(McbpmfApi.CtrlEnterBehavior), variant);
+        if (enumv == null) {
+          return false;
+        }
+        val_dest.set_enum(enumv.value);
+        return true;
+      }, (SettingsBindSetMappingShared) null, null, null);
+  }
+
+  private void on_settings_changed(string key) {
+    warning("Setting [%s] changed!", key);
+    if (key == "candidates-per-page") {
+      warning("owo lay=%d", this.m_engine_settings.get_enum("cand-layout-hint"));
+    }
   }
 
   private void init_lookup_table() {

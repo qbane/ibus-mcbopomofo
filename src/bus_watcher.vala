@@ -1,12 +1,12 @@
 namespace IBusMcBopomofo {
   class BusWatcher : Object {
     public DBusConnection connection { get; construct; }
+    public bool embed_preedit_text { get; set construct; }
+
     private uint handle;
 
-    public signal void notify_preedit(bool value);
-
     public BusWatcher(DBusConnection conn) {
-      Object(connection: conn);
+      Object(connection: conn, embed_preedit_text: true);
 
       this.handle = conn.signal_subscribe(
         /* sender */ null,
@@ -24,8 +24,28 @@ namespace IBusMcBopomofo {
           Variant val;
           while (dict.next("{sv}", out key, out val)) {
             if (key == "EmbedPreeditText") {
-              this.notify_preedit(val.get_boolean());
+              this.embed_preedit_text = val.get_boolean();
+              debug("embed_preedit_text is set to %s!", this.embed_preedit_text.to_string());
             }
+          }
+        });
+
+      conn.call.begin(
+        /* busname */ "org.freedesktop.IBus",
+        /* objpath */ "/org/freedesktop/IBus",
+        /* ifname */ "org.freedesktop.DBus.Properties",
+        /* method */ "Get",
+        new Variant("(ss)", "org.freedesktop.IBus", "EmbedPreeditText"),
+        new VariantType("(v)"),
+        DBusCallFlags.NONE,
+        -1, null, (obj, res) => {
+          try {
+            Variant v;
+            conn.call.end(res).get("(v)", out v);
+            this.embed_preedit_text = v.get_boolean();
+          } catch (Error e) {
+            warning("Error getting value of EmbedPreeditText from ibus connection: %s",
+              e.message);
           }
         });
     }

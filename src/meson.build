@@ -13,7 +13,6 @@ vapi_dir = meson.current_source_dir()
 add_project_arguments([
   '--vapidir', vapi_dir,
   '--pkg', 'config',
-  '--pkg', 'ibus-1.0',
   '--pkg', 'mcbpmf_api'], language: 'vala')
 
 # workaround to rebuild when any of local vapis are stale
