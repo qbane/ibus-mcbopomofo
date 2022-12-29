@@ -23,7 +23,7 @@ It can be built with the official repository of Ubuntu 18.04 LTS. The version nu
 The McBopomofo engine is encapsulated as a static C library. It is pinned as a submodule for sharing resources with upstream. You have to fetch it in order to build this project:
 
 ```
-git submodule update --recursive
+git submodule update --init
 cd mcbopomofo-core
 mkdir -p build/src
 ```
