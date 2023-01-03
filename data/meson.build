@@ -18,3 +18,6 @@ setup_desktop_file = 'ibus-setup-mcbopomofo.desktop'
 install_subdir('icons', install_dir: pkgdatadir)
 
 meson.add_install_script('copy_from_upstream.sh', '../mcbopomofo-core', pkgdatadir)
+
+gnome = import('gnome')
+gnome.post_install(glib_compile_schemas: true)

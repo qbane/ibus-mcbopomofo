@@ -4,12 +4,12 @@ unowned EnumValue? get_enum_from_variant(Type enum_type, Variant variant) {
   return enumc.get_value_by_nick(nick);
 }
 
-class IBusMcBopomofo.Engine : IBus.Engine {
+sealed class IBusMcBopomofo.Engine : IBus.Engine {
   public static IBus.Bus? bus;
   public static string? builtin_lm_dir;
   public static string? user_data_dir;
-  protected class Settings m_panel_settings;
-  protected class Settings m_engine_settings;
+  private static Settings m_panel_settings;
+  private static Settings m_engine_settings;
 
   private McbpmfApi.Core core;
   private IBusMcBopomofo.BusWatcher m_bus_watcher;
@@ -25,12 +25,11 @@ class IBusMcBopomofo.Engine : IBus.Engine {
   private string[] selection_labels;
   private IBus.LookupTable? lookup_table;
 
-  public bool embed_preedit_text { get; set; }
   // enable shift to switch passthrough mode temporarily
   public bool passthrough_switch_enabled { get; set construct; }
   public int lookup_table_orientation { get; set; }
   public bool is_passthrough_mode { get; private set; }
-  public bool use_soft_cursor { get; set; }
+  public bool use_inline_caret { get; set; }
 
   // the actual page size, set to the minimum of
   // cand-per-page from dconf and selection_keys.length
@@ -57,27 +56,26 @@ class IBusMcBopomofo.Engine : IBus.Engine {
     IBus.KEY_End,
   };
 
-  class construct {
+  static construct {
     m_panel_settings = new Settings("org.freedesktop.ibus.panel");
     m_engine_settings = new Settings("org.openVanilla.McBopomofo");
   }
 
   construct {
+#if IBUS_ENGINE_SUPPORTS_FOCUS_ID
+    this.has_focus_id = true;
+#endif
+
     info("construct engine_name=[%s], object_path=[%s]!", this.engine_name, this.object_path);
 
-    this.m_panel_settings.bind("lookup-table-orientation", this, "lookup-table-orientation", SettingsBindFlags.DEFAULT);
-
     this.m_bus_watcher = new BusWatcher(this.connection);
-    this.m_bus_watcher.bind_property(
-      "embed-preedit-text", this, "embed-preedit-text", BindingFlags.SYNC_CREATE);
-
-    this.m_engine_settings.changed.connect(this.on_settings_changed);
-
     this.m_prop_manager = new PropManager();
     this.core = new McbpmfApi.Core();
 
     debug("this.core.input_mode=%s", this.core.input_mode.to_string());
     this.bind_settings();
+    Engine.m_engine_settings.changed.connect(this.on_settings_changed);
+    Engine.m_panel_settings.bind("lookup-table-orientation", this, "lookup-table-orientation", SettingsBindFlags.DEFAULT);
 
     if (Engine.builtin_lm_dir == null) {
       warning("Path to built-in language model is empty!!");
@@ -100,18 +98,18 @@ class IBusMcBopomofo.Engine : IBus.Engine {
 
   public override void destroy() {
     info("destroy!");
-    this.m_bus_watcher = null;
+    this.m_bus_watcher.dispose();
     base.destroy();
   }
 
   private void bind_settings() {
-    this.m_engine_settings.bind("passthrough-switch-enabled",
+    Engine.m_engine_settings.bind("passthrough-switch-enabled",
       this, "passthrough-switch-enabled", SettingsBindFlags.GET);
 
-    this.m_engine_settings.bind("use-soft-cursor",
-      this, "use-soft-cursor", SettingsBindFlags.GET);
+    Engine.m_engine_settings.bind("use-inline-caret",
+      this, "use-inline-caret", SettingsBindFlags.GET);
 
-    this.m_engine_settings.bind_with_mapping("keyboard-layout",
+    Engine.m_engine_settings.bind_with_mapping("keyboard-layout",
       this.core, "keyboard-layout", SettingsBindFlags.GET,
       (val_dest, variant) => {
         var enumv = get_enum_from_variant(typeof(McbpmfApi.KeyboardLayout), variant);
@@ -122,27 +120,27 @@ class IBusMcBopomofo.Engine : IBus.Engine {
         return true;
       }, (SettingsBindSetMappingShared) null, null, null);
 
-    this.m_engine_settings.bind_with_mapping("select-phrase",
+    Engine.m_engine_settings.bind_with_mapping("select-phrase",
       this.core, "select-cand-after-cursor", SettingsBindFlags.GET,
       (val_dest, variant) => {
         val_dest.set_boolean(variant.get_string() == "after-cursor");
         return true;
       }, (SettingsBindSetMappingShared) null, null, null);
 
-    this.m_engine_settings.bind("auto-advance-cursor",
+    Engine.m_engine_settings.bind("auto-advance-cursor",
       this.core, "auto-advance-cursor", SettingsBindFlags.GET);
 
-    this.m_engine_settings.bind_with_mapping("behavior-shift-letter-keys",
+    Engine.m_engine_settings.bind_with_mapping("behavior-shift-letter-keys",
       this.core, "put-lcase-letters-to-buffer", SettingsBindFlags.GET,
       (val_dest, variant) => {
         val_dest.set_boolean(variant.get_string() == "put-lowercase-to-buffer");
         return true;
       }, (SettingsBindSetMappingShared) null, null, null);
 
-    this.m_engine_settings.bind("esc-clears-buffer",
+    Engine.m_engine_settings.bind("esc-clears-buffer",
       this.core, "esc-clears-buffer", SettingsBindFlags.GET);
 
-    this.m_engine_settings.bind_with_mapping("behavior-ctrl-enter-key",
+    Engine.m_engine_settings.bind_with_mapping("behavior-ctrl-enter-key",
       this.core, "ctrl-enter-behavior", SettingsBindFlags.GET,
       (val_dest, variant) => {
         var enumv = get_enum_from_variant(typeof(McbpmfApi.CtrlEnterBehavior), variant);
@@ -156,9 +154,6 @@ class IBusMcBopomofo.Engine : IBus.Engine {
 
   private void on_settings_changed(string key) {
     warning("Setting [%s] changed!", key);
-    if (key == "candidates-per-page") {
-      warning("owo lay=%d", this.m_engine_settings.get_enum("cand-layout-hint"));
-    }
   }
 
   private void init_lookup_table() {
@@ -503,7 +498,7 @@ class IBusMcBopomofo.Engine : IBus.Engine {
       this.hide_lookup_table();
     }
 
-    if (!this.m_language_model_loaded) {
+    if (showBuffer && !this.m_language_model_loaded) {
       var str = _("Warning: The language model for %s is not loaded.\nPlease check the installation.").printf(_("McBopomofo"));
       var text = new IBus.Text.from_string(str);
       this.update_auxiliary_text(text, true);
@@ -550,9 +545,9 @@ class IBusMcBopomofo.Engine : IBus.Engine {
     IBus.Text preedit;
 
     // when preedit text is embedded, it is fine without any decoration
-    bool drawCursor = !this.embed_preedit_text;
-    bool insertSoftCursor = drawCursor && this.use_soft_cursor;
-    if (insertSoftCursor) {
+    bool drawCursor = !this.m_bus_watcher.embed_preedit_text;
+    bool insertInlineCaret = drawCursor && this.use_inline_caret;
+    if (insertInlineCaret) {
       // from ibus-rime, split the buffer at cursor
       StringBuilder sb = new StringBuilder(preeditStr);
       sb.insert(curoffs, "\u2038");
@@ -581,16 +576,36 @@ class IBusMcBopomofo.Engine : IBus.Engine {
     this.update_preedit_text(preedit, curpos, true);
   }
 
+#if IBUS_ENGINE_SUPPORTS_FOCUS_ID
+  public override void focus_in_id(string ic_path, string client_name) {
+    info("focus_in! ic=[%s], client=[%s]", ic_path, client_name);
+    this.focus_in();
+    /* extra logic */
+  }
+#endif
+
   public override void focus_in() {
+#if !IBUS_ENGINE_SUPPORTS_FOCUS_ID
     info("focus_in!");
+#endif
     if (!m_props_registered) {
       this.register_properties(this.m_prop_manager.props_list);
       m_props_registered = true;
     }
   }
 
+#if IBUS_ENGINE_SUPPORTS_FOCUS_ID
+  public override void focus_out_id(string ic_path) {
+    info("focus_out! ic=[%s]", ic_path);
+    this.focus_out();
+    /* extra logic */
+  }
+#endif
+
   public override void focus_out() {
+#if !IBUS_ENGINE_SUPPORTS_FOCUS_ID
     info("focus_out!");
+#endif
     m_props_registered = false;
     this.core.reset_state();
     this.update_view(null);

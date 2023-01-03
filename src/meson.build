@@ -15,6 +15,20 @@ add_project_arguments([
   '--pkg', 'config',
   '--pkg', 'mcbpmf_api'], language: 'vala')
 
+ibus_supports_focus_id = cc.compiles('''#include <ibus.h>
+#if IBUS_CHECK_VERSION(1,5,27)
+#else
+#error FAIL
+#endif
+''',
+  name: 'IBus supports focus ID',
+  dependencies: ibus_dep)
+
+if ibus_supports_focus_id
+  add_project_arguments([
+    '-D', 'IBUS_ENGINE_SUPPORTS_FOCUS_ID'], language: 'vala')
+endif
+
 # workaround to rebuild when any of local vapis are stale
 local_vapis = custom_target(
   depend_files: ['mcbpmf_api.vapi'],

@@ -50,14 +50,15 @@ namespace IBusMcBopomofo {
         });
     }
 
-    ~BusWatcher() {
-      // XXX: will this ever be called?
-      warning("bus watcher destructor is called!!");
+    public override void dispose() {
       var conn = this.connection;
-      if (!conn.closed) {
+      if (this.handle != 0 && !conn.closed) {
         conn.signal_unsubscribe(this.handle);
       }
       this.handle = 0;
+      // TODO: if the async call is ongoing, cancel it
+
+      base.dispose();
     }
   }
 }

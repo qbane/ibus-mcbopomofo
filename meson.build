@@ -35,12 +35,14 @@ endif
 cc = meson.get_compiler('c')
 valac = meson.get_compiler('vala')
 
+ibus_dep = dependency('ibus-1.0', version: '>= 1.5.4')
+
 dependencies = [
   valac.find_library('posix'),
   dependency('glib-2.0'),
   dependency('gobject-2.0'),
   dependency('gio-2.0'),
-  dependency('ibus-1.0', required: false),
+  ibus_dep,
   cc.find_library('m', required: false),
   cc.find_library('stdc++'),
   cc.find_library('McBopomofoCore',
@@ -65,6 +67,7 @@ summary({
 
 summary({
     'Engine name': engine_name,
+    'IBus supports focus ID': ibus_supports_focus_id,
     'Debug': get_option('debug'),
     'Optimization': get_option('optimization'),
   },
